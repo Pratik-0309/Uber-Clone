@@ -4,6 +4,7 @@ import express, { urlencoded } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser"; 
 import connectDB from "./config/db.js";
+import userRouter from "./routes/user.route.js";
 
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(cors({
     credentials: true
 }));
 
+app.use("/api/user", userRouter);
 
 app.listen(process.env.PORT, ()=> {
     console.log(`Server is listening on port ${process.env.PORT}`);
