@@ -207,6 +207,57 @@ const loginUser = async (req, res) => {
   }
 };
 
+const userProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(400).json({
+        message: "User in not authenticated",
+        success: false,
+      });
+    }
 
+    return res.status(200).json({
+      user,
+      message: "User Profile fetch Successfully",
+      success: true,
+    });
+  } catch (error) {
+    console.log("Failed to fetch profile:", error);
+    return res.status(500).json({
+      message: error.message,
+      success: false,
+    });
+  }
+};
 
-export { registerUser, loginUser, refreshAccessToken };
+const logoutUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(400).json({
+        message: "User not found",
+        success: false,
+      });
+    }
+
+    user.refreshToken = null;
+    await user.save({ validateBeforeSave: false });
+    return res
+      .status(200)
+      .clearCookie("accessToken", options)
+      .clearCookie("refreshToken", options)
+      .json({
+        success: true,
+        message: "You have been logged out successfully. See you soon!",
+      });
+  } catch (error) {
+    console.error("Error logging out user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred during logout. Please try again.",
+    });
+  }
+};
+
+export { registerUser, loginUser, refreshAccessToken, userProfile, logoutUser };
