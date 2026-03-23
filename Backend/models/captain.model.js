@@ -71,14 +71,14 @@ const captainSchema = new mongoose.Schema({
 
 captainSchema.pre("save", async function(){
     if(!this.isModified("password")) return;
-    this.password = await bcrpyt.hash(this.password, 10);
+    this.password = await bcrypt.hash(this.password, 10);
 })
 
-captainSchema.method.matchPassword = async function(enteredPassword){
+captainSchema.methods.matchPassword = async function(enteredPassword){
     return await bcrypt.compare(enteredPassword, this.password);
 }
 
-captainSchema.method.generateAccessToken = function(){
+captainSchema.methods.generateAccessToken = function(){
     return jwt.sign(
         {
             _id: this._id,

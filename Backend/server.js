@@ -5,6 +5,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser"; 
 import connectDB from "./config/db.js";
 import userRouter from "./routes/user.route.js";
+import captainRouter from "./routes/captain.route.js";
 
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(cors({
 }));
 
 app.use("/api/user", userRouter);
+app.use("/api/captain", captainRouter);
 
 app.listen(process.env.PORT, ()=> {
     console.log(`Server is listening on port ${process.env.PORT}`);
