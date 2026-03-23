@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
+import Captain from "../models/captain.model.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 const options = {
@@ -42,6 +43,7 @@ const generateAccessRefreshToken = async (userId) => {
 const refreshAccessToken = async (req, res) => {
   try {
     const incomingRefreshToken = req.cookies.refreshToken;
+
     if (!incomingRefreshToken) {
       return res.status(401).json({
         message: "Your Session has expired. Please log in again.",
@@ -54,24 +56,38 @@ const refreshAccessToken = async (req, res) => {
       process.env.REFRESH_TOKEN_SECRET,
     );
 
-    const user = await User.findById(decodedToken._id);
-    if (!user) {
-      return res.status(401).json({
-        message: "Account not found. Please register or log in.",
+    let account;
+
+    if (decodedToken.role === "captain") {
+      account = await Captain.findById(decodedToken._id);
+    } else if (decodedToken.role === "user") {
+      account = await User.findById(decodedToken._id);
+    } else {
+      return res.status(400).json({
+        message: "Invalid role",
         success: false,
       });
     }
 
-    if (incomingRefreshToken !== user?.refreshToken) {
+    if (!account) {
+      return res.status(401).json({
+        message: "Account not found. Please login again.",
+        success: false,
+      });
+    }
+
+    if (incomingRefreshToken !== account.refreshToken) {
       return res.status(401).json({
         message: "Session is no longer valid. Please sign in again",
         success: false,
       });
     }
 
-    const { accessToken, refreshToken } = await generateAccessRefreshToken(
-      user._id,
-    );
+    const accessToken = account.generateAccessToken();
+    const refreshToken = account.generateRefreshToken();
+
+    account.refreshToken = refreshToken;
+    await account.save({ validateBeforeSave: false });
 
     return res
       .status(200)
@@ -85,7 +101,7 @@ const refreshAccessToken = async (req, res) => {
     console.error("Token Refresh Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Something went wrong while updating your session.",
+      message: "Invalid or expired refresh token.",
     });
   }
 };
