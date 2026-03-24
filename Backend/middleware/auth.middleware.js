@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/user.model.js";
 
-const verifyJWT = async (req, res, next) => {
+const authUser = async (req, res, next) => {
   try {
     const token = req.cookies.accessToken;
     if (!token) {
@@ -39,4 +39,4 @@ const verifyJWT = async (req, res, next) => {
   }
 };
 
-export default verifyJWT;
+export default authUser;

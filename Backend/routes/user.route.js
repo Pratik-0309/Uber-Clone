@@ -1,7 +1,7 @@
 import express from "express";
 import { registerUser,loginUser, refreshAccessToken, userProfile, logoutUser  } from "../controllers/user.controller.js";
 import { body } from "express-validator";
-import verifyJWT from "../middleware/auth.middleware.js";
+import authUser from "../middleware/auth.middleware.js";
 
 const userRouter = express.Router()
 
@@ -24,9 +24,9 @@ userRouter.post("/login",[
 
 userRouter.post("/refresh-token", refreshAccessToken);
 
-userRouter.get("/profile", verifyJWT, userProfile);
+userRouter.get("/profile", authUser, userProfile);
 
-userRouter.post("/logout", verifyJWT, logoutUser);
+userRouter.post("/logout", authUser, logoutUser);
 
 
 export default userRouter;
