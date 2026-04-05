@@ -1,17 +1,47 @@
-import React, { useState } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { Link } from "react-router-dom";
+import axiosInstance from "../util/axiosInstance.js";
+import { userDataContext } from "../context/UserContext.jsx";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const UserLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userData, setUserData] = useState({});
 
-  const handleSubmit = (e) => {
+  const { user, setUser, isLoading } = useContext(userDataContext);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate("/home");
+    }
+  }, [user, isLoading, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setUserData({ email, password });
-    setEmail("");
-    setPassword("");
+    try {
+      const response = await axiosInstance.post("/api/user/login", {
+        email,
+        password,
+      });
+      const data = response.data;
+      if (data.success) {
+        setUser(data.user);
+        navigate("/home");
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Login failed");
+    } finally {
+      setEmail("");
+      setPassword("");
+    }
   };
+
+  if (isLoading) return null;
 
   return (
     <div className="p-7 h-screen flex flex-col justify-between bg-white">

@@ -1,26 +1,53 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useContext, useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axiosInstance from "../util/axiosInstance.js";
+import toast from "react-hot-toast";
+import { userDataContext } from "../context/UserContext.jsx";
 
 const UserSignup = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userData, setUserData] = useState({});
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  const { user, setUser, isLoading } = useContext(userDataContext);
+
+  useEffect(() => {
+    if (!isLoading && user) {
+      navigate("/home");
+    }
+  }, [user, isLoading, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const newUser = {
       fullName: { firstName, lastName },
       email,
       password,
     };
-    setUserData(newUser);
-    setFirstName("");
-    setLastName("");
-    setEmail("");
-    setPassword("");
+
+    try {
+      const responce = await axiosInstance.post("/api/user/register", newUser);
+      const data = responce.data;
+      if (data.success) {
+        setUser(data.user);
+        navigate("/home");
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Registration failed");
+    } finally {
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setPassword("");
+    }
   };
+
+  if (isLoading) return null;
 
   return (
     <div className="p-7 h-screen flex flex-col justify-between bg-white">
