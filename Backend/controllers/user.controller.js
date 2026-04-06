@@ -83,8 +83,8 @@ const refreshAccessToken = async (req, res) => {
       });
     }
 
-    const accessToken = account.generateAccessToken();
-    const refreshToken = account.generateRefreshToken();
+    const accessToken = await account.generateAccessToken();
+    const refreshToken = await account.generateRefreshToken();
 
     account.refreshToken = refreshToken;
     await account.save({ validateBeforeSave: false });

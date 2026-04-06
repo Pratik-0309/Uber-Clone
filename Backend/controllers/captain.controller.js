@@ -69,8 +69,8 @@ const captainRegister = async (req, res) => {
       },
     });
 
-    const accessToken = captain.generateAccessToken();
-    const refreshToken = captain.generateRefreshToken();
+    const accessToken = await captain.generateAccessToken();
+    const refreshToken = await captain.generateRefreshToken();
 
     captain.refreshToken = refreshToken;
     await captain.save({ validateBeforeSave: false });
@@ -128,8 +128,8 @@ const captainLogin = async (req, res) => {
       });
     }
 
-    const accessToken = captain.generateAccessToken();
-    const refreshToken = captain.generateRefreshToken();
+    const accessToken = await captain.generateAccessToken();
+    const refreshToken = await captain.generateRefreshToken();
 
     captain.refreshToken = refreshToken;
     await captain.save({ validateBeforeSave: false });
