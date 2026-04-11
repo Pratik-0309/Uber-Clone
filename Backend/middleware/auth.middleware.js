@@ -4,7 +4,7 @@ import Captain from "../models/captain.model.js";
 
 const authUser = async (req, res, next) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.userAccessToken;
     if (!token) {
       return res.status(401).json({
         message: "Token is required",
@@ -42,7 +42,7 @@ const authUser = async (req, res, next) => {
 
 export const authCaptain = async (req, res, next) => {
   try {
-    const token = req.cookies.accessToken;
+    const token = req.cookies.captainAccessToken;
     if (!token) {
       return res.status(401).json({
         message: "Token is required",
@@ -58,7 +58,7 @@ export const authCaptain = async (req, res, next) => {
       });
     }
 
-     if (decodedToken.role !== "captain") {
+    if (decodedToken.role !== "captain") {
       return res.status(403).json({
         message: "Access denied: Captain only",
         success: false,

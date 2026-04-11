@@ -81,8 +81,8 @@ const captainRegister = async (req, res) => {
 
     return res
       .status(201)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
+      .cookie("captainAccessToken", accessToken, options)
+      .cookie("captainRefreshToken", refreshToken, options)
       .json({
         message: "Captain Registered Successsfully",
         success: true,
@@ -140,8 +140,8 @@ const captainLogin = async (req, res) => {
 
     return res
       .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
+      .cookie("captainAccessToken", accessToken, options)
+      .cookie("captainRefreshToken", refreshToken, options)
       .json({
         captain: loggedInCaptain,
         message: "Captain Logged in Successfully",
@@ -203,8 +203,8 @@ const captainLogout = async (req, res) => {
 
     return res
       .status(200)
-      .clearCookie("accessToken", options)
-      .clearCookie("refreshToken", options)
+      .clearCookie("captainAccessToken", options)
+      .clearCookie("captainRefreshToken", options)
       .json({
         success: true,
         message: "You have been logged out successfully. See you soon!",

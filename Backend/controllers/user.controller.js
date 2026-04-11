@@ -12,75 +12,33 @@ const options = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-const generateAccessRefreshToken = async (userId) => {
-  try {
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new Error("Couldn't find an account associated with that ID.");
-    }
-
-    const accessToken = await user.generateAccessToken();
-    const refreshToken = await user.generateRefreshToken();
-
-    if (!accessToken || !refreshToken) {
-      throw new Error(
-        "Something went wrong while securing your session. Please try again.",
-      );
-    }
-
-    user.refreshToken = refreshToken;
-    await user.save({ validateBeforeSave: false });
-
-    return { accessToken, refreshToken };
-  } catch (error) {
-    console.log("Token Generation error:", error);
-    throw new Error(
-      error.message || "An unexpected error occurred during authentication.",
-    );
-  }
-};
-
 const refreshAccessToken = async (req, res) => {
   try {
-    const incomingRefreshToken = req.cookies.refreshToken;
+    
+    const isCaptainPath = req.originalUrl.includes('/api/captain');
+    const tokenName = isCaptainPath ? "captainRefreshToken" : "userRefreshToken";
+    
+    const incomingRefreshToken = req.cookies[tokenName];
 
     if (!incomingRefreshToken) {
       return res.status(401).json({
-        message: "Your Session has expired. Please log in again.",
+        message: "No refresh token found for this role.",
         success: false,
       });
     }
 
-    const decodedToken = jwt.verify(
-      incomingRefreshToken,
-      process.env.REFRESH_TOKEN_SECRET,
-    );
+    const decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
 
-    let account;
-
-    if (decodedToken.role === "captain") {
-      account = await Captain.findById(decodedToken._id);
-    } else if (decodedToken.role === "user") {
-      account = await User.findById(decodedToken._id);
-    } else {
-      return res.status(400).json({
-        message: "Invalid role",
-        success: false,
-      });
+    if (isCaptainPath && decodedToken.role !== 'captain') {
+       throw new Error("Invalid token role for this endpoint");
     }
 
-    if (!account) {
-      return res.status(401).json({
-        message: "Account not found. Please login again.",
-        success: false,
-      });
-    }
+    let account = decodedToken.role === "captain" 
+      ? await Captain.findById(decodedToken._id) 
+      : await User.findById(decodedToken._id);
 
-    if (incomingRefreshToken !== account.refreshToken) {
-      return res.status(401).json({
-        message: "Session is no longer valid. Please sign in again",
-        success: false,
-      });
+    if (!account || incomingRefreshToken !== account.refreshToken) {
+      return res.status(401).json({ message: "Invalid session.", success: false });
     }
 
     const accessToken = await account.generateAccessToken();
@@ -89,20 +47,17 @@ const refreshAccessToken = async (req, res) => {
     account.refreshToken = refreshToken;
     await account.save({ validateBeforeSave: false });
 
+    const accessTokenName = isCaptainPath ? "captainAccessToken" : "userAccessToken";
+    const refreshTokenName = isCaptainPath ? "captainRefreshToken" : "userRefreshToken";
+
     return res
       .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json({
-        message: "Session renewed successfully.",
-        success: true,
-      });
+      .cookie(accessTokenName, accessToken, options)
+      .cookie(refreshTokenName, refreshToken, options)
+      .json({ success: true, message: "Tokens renewed" });
+
   } catch (error) {
-    console.error("Token Refresh Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Invalid or expired refresh token.",
-    });
+    return res.status(401).json({ success: false, message: "Token expired" });
   }
 };
 
@@ -140,9 +95,11 @@ const registerUser = async (req, res) => {
       password,
     });
 
-    const { accessToken, refreshToken } = await generateAccessRefreshToken(
-      user._id,
-    );
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
     const registeredUser = await User.findById(user._id).select(
       "-password -refreshToken",
@@ -150,8 +107,8 @@ const registerUser = async (req, res) => {
 
     return res
       .status(201)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
+      .cookie("userAccessToken", accessToken, options)
+      .cookie("userRefreshToken", refreshToken, options)
       .json({
         message: "Welcome! Your account has been created successfully.",
         user: registeredUser,
@@ -197,9 +154,11 @@ const loginUser = async (req, res) => {
       });
     }
 
-    const { accessToken, refreshToken } = await generateAccessRefreshToken(
-      user._id,
-    );
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
 
     const loggedInUser = await User.findById(user._id).select(
       "-password -refreshToken",
@@ -207,8 +166,8 @@ const loginUser = async (req, res) => {
 
     return res
       .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
+      .cookie("userAccessToken", accessToken, options)
+      .cookie("userRefreshToken", refreshToken, options)
       .json({
         user: loggedInUser,
         message: "User Logged-In Successfully",
@@ -261,8 +220,8 @@ const logoutUser = async (req, res) => {
     await user.save({ validateBeforeSave: false });
     return res
       .status(200)
-      .clearCookie("accessToken", options)
-      .clearCookie("refreshToken", options)
+      .clearCookie("userAccessToken", options)
+      .clearCookie("userRefreshToken", options)
       .json({
         success: true,
         message: "You have been logged out successfully. See you soon!",
